@@ -1,3 +1,5 @@
+import payntbind
+
 import paynt.quotient.quotient
 import paynt.quotient.pomdp
 
@@ -23,5 +25,8 @@ class PosgQuotient(paynt.quotient.quotient.Quotient):
         print(type(pomdp), dir(pomdp))
         print(dir(pomdp.labeling))
         # print(pomdp.labeling.get_states("__player_1_state__"))
+
+        print("\n\n")
+        payntbind.synthesis.foo(pomdp)
 
         exit()
