@@ -8,30 +8,48 @@
 
 
 namespace synthesis {
+    struct intermediateState
+    {
+        uint64_t stateNumber;
+        uint64_t dstState;
+        bool isP1State;
+    };
+
     /**
-     * @brief 
+     * @brief
      * A class representing quotient for Partialy Observable Stochastic Games
      */
     class Posg
-    {        
+    {
         public:
         /**
          * @brief Construct a new Posg quotient
-         * 
+         *
          * @param quotient Pomdp representing the game. States with label player1label are considered as
          * states from player 1, all other states are player 2's states
          * @param player1label Used to indicate player 1 states in quotient
          */
         Posg(storm::models::sparse::Pomdp<double> quotient, std::string player1label);
 
-        private:        
+        private:
         storm::models::sparse::Pomdp<double> pomdp;
         std::shared_ptr<Stochastic2PlayerGame> game;
-        
-        std::shared_ptr<Stochastic2PlayerGame> createGame(std::string p1label);
+        std::string p1label;
+
+        // note: because -1 is used to indicate not found, there can be only int64_t states not uint64_t
+        int64_t findIntermediateState(std::vector<intermediateState> states, uint64_t dstState);
+
+        std::pair<storm::storage::SparseMatrix<double>, std::vector<intermediateState>> createAlternatingMatrix(
+            storm::storage::SparseMatrix<double> &transitionMatrix,
+            storm::models::sparse::StateLabeling &stateLabeling,
+            std::string p1label);
+
+        void makeAlternating();
+
+        std::shared_ptr<Stochastic2PlayerGame> createGame();
 
         void getStateTranslations(ItemTranslator &p1Translator, ItemTranslator &p2Translator, std::string p1label);
-        
+
         storm::storage::SparseMatrix<double> createTransitionMatrix(
             ItemTranslator mainPlayerTranslator,
             ItemTranslator otherPlayerTraslator);
