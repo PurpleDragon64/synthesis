@@ -216,7 +216,10 @@ namespace synthesis {
         auto player2Matrix = createTransitionMatrix(stateToP2State, stateToP1State);
         auto stateLabeling = pomdp.getStateLabeling();
 
-        return std::make_shared<Stochastic2PlayerGame>(player1Matrix, player2Matrix, stateLabeling);
+        return std::make_shared<Stochastic2PlayerGame>(
+            player1Matrix, player2Matrix,
+            stateLabeling,
+            stateToP1State, stateToP2State);
     }
 
     void Posg::getStateTranslations(ItemTranslator &p1Translator, ItemTranslator &p2Translator, std::string p1label)
