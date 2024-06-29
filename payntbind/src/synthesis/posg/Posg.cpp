@@ -26,20 +26,20 @@ namespace synthesis {
         std::cout << "-----" << std::endl;
     }
 
-    int64_t Posg::findIntermediateState(std::vector<intermediateState> states, uint64_t dstState)
+    std::vector<IntermediateState>::iterator Posg::findIntermediateState(std::vector<IntermediateState> &states, uint64_t dstState)
     {
         for (auto state = states.begin(); state != states.end(); state++)
         {
             if ((*state).dstState == dstState)
             {
-                return (*state).stateNumber;
+                return state;
             }
         }
 
-        return -1;
+        return states.end();
     }
 
-    std::pair<storm::storage::SparseMatrix<double>, std::vector<intermediateState>> Posg::createAlternatingMatrix(
+    std::pair<storm::storage::SparseMatrix<double>, std::vector<IntermediateState>> Posg::createAlternatingMatrix(
             storm::storage::SparseMatrix<double> &transitionMatrix,
             storm::models::sparse::StateLabeling &stateLabeling,
             std::string p1label)
@@ -47,7 +47,7 @@ namespace synthesis {
         auto numberOfStates = transitionMatrix.getColumnCount();
         auto firstActionOfStates = transitionMatrix.getRowGroupIndices();
 
-        std::vector<intermediateState> intermediateStates;
+        std::vector<IntermediateState> intermediateStates;
         uint64_t newStateNumber = numberOfStates;
 
         storm::storage::SparseMatrixBuilder<double> matrixBuilder(0, 0, 0, false, true);
@@ -72,24 +72,24 @@ namespace synthesis {
                     bool notAlternating = isSrcP1 == isDstP1;
                     if (notAlternating)
                     {
-                        auto intermediateStateNum = findIntermediateState(intermediateStates, dstState);
-                        if (intermediateStateNum < 0)
+                        auto intermediateStateIter = findIntermediateState(intermediateStates, dstState);
+                        if (intermediateStateIter == intermediateStates.end())
                         {
-                            intermediateState newState = {
+                            IntermediateState newState = {
                                 .stateNumber = newStateNumber,
                                 .dstState = dstState,
                                 .isP1State = !isDstP1};
                             intermediateStates.push_back(newState);
-                            intermediateStateNum = newStateNumber;
-                            newStateNumber++;
-                        }
 
-                        matrixBuilder.addNextValue(rowCount, intermediateStateNum, probability);
+                            dstState = newStateNumber++;
+                        }
+                        else
+                        {
+                            dstState = (*intermediateStateIter).stateNumber;
+                        }
                     }
-                    else
-                    {
-                        matrixBuilder.addNextValue(rowCount, dstState, probability);
-                    }
+
+                    matrixBuilder.addNextValue(rowCount, dstState, probability);
                 }
                 rowCount++;
             }
@@ -155,6 +155,7 @@ namespace synthesis {
         auto newStateCount = newMatrix.getColumnCount();
         storm::models::sparse::StateLabeling newLabeling(newStateCount);
 
+        // copy original labels
         auto oldLabels = oldStateLabeling.getLabels();
         for (auto label : oldLabels)
         {
@@ -169,6 +170,7 @@ namespace synthesis {
                 newLabeling.addLabelToState(label, state);
             }
         }
+        // add labels to new states
         for (auto state : intermediateStates)
         {
             if (state.isP1State)
