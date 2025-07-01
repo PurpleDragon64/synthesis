@@ -44,29 +44,30 @@ class PomdpFamilyQuotient(paynt.quotient.mdp_family.MdpFamilyQuotient):
 
         super().__init__(quotient_mdp = quotient_mdp, family = family, coloring = coloring, specification = specification)
 
-        # The code below has been currently commented, because of the changes in observations.
-        # Uncomment and fix according to new unfolded observations if needed.
+        # for each observation, a list of actions (indices) available
+        self.observation_to_actions = None
+        # POMDP manager used for unfolding the memory model into the quotient POMDP
+        self.fsc_unfolder = None
 
-        # # for each observation, a list of actions (indices) available
-        # self.observation_to_actions = None
-        # # POMDP manager used for unfolding the memory model into the quotient POMDP
-        # self.fsc_unfolder = None
-
-        # # identify actions available at each observation
-        # self.observation_to_actions = [None] * self.num_observations
-        # state_to_observation = self.state_to_observation
-        # for state,available_actions in enumerate(self.state_to_actions):
-        #     obs = state_to_observation[state]
-        #     if self.observation_to_actions[obs] is not None:
-        #         assert self.observation_to_actions[obs] == available_actions,\
-        #             f"two states in observation cla ss {obs} differ in available actions"
-        #         continue
-        #     self.observation_to_actions[obs] = available_actions
+        # identify actions available at each observation
+        self.observation_to_actions = [None] * self.num_observations_unfolded
+        state_to_observation = self.unfolded_state_to_observation
+        for state,available_actions in enumerate(self.state_to_actions):
+            obs = state_to_observation[state]
+            if self.observation_to_actions[obs] is not None:
+                assert self.observation_to_actions[obs] == available_actions,\
+                    f"two states in observation cla ss {obs} differ in available actions"
+                continue
+            self.observation_to_actions[obs] = available_actions
 
 
     @property
     def num_observations(self):
         return self.obs_evaluator.num_obs_classes
+
+    @property
+    def num_observations_unfolded(self):
+        return max(self.unfolded_state_to_observation) + 1
 
     @property
     def state_to_observation(self):
