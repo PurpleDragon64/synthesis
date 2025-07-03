@@ -100,7 +100,7 @@ class Family:
         for hole in range(self.num_holes):
             options = self.hole_options(hole)
             hole_str = self.hole_options_to_string(hole,options)
-            if not '(P1,' in hole_str:
+            if not '(P1,' in hole_str: # do not print choices of second player (bcs of interval pomdps)
                 hole_strings.append(hole_str)
         return ", ".join(hole_strings)
 
