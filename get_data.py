@@ -12,10 +12,12 @@ models = [
     'posmg/dice-and-coin',
     'posmg/dice-and-coin2',
     'posmg/grid-walls',
-    'posmg/attacker-one-defender'
+    'posmg/attacker-one-defender',
+    # policy tree
+    'archive/atva24-policy-trees/obstacles-10-6-skip-easy',
+    'archive/atva24-policy-trees/avoid-8-2-easy',
     # pomdp family - not present in current version of paynt
     # interval pomdp - not present in current version of paynt
-    # policy tree - not working or slow with Tempest
 ]
 
 # open csv file to write results
