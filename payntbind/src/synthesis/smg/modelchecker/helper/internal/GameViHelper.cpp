@@ -45,7 +45,28 @@ namespace synthesis {
         uint64_t iter = 0;
         constrainedChoiceValues = std::vector<ValueType>(b.size(), storm::utility::zero<ValueType>());
 
+        std::cerr << "Started VI\n";
+        std::cerr << "Value vector size: " << x.size() << "\n";
+
         while (iter < maxIter) {
+            std::cerr << "Iteration " << iter << "\n";
+
+            auto current_vals = xNew();
+            auto previous_vals = xOld();
+            uint64_t numberOfDiffs = 0;
+            ValueType totalDiff = 0;
+
+            for (size_t i = 0; i < current_vals.size(); i++) {
+                ValueType diff = fabs(current_vals[i] - previous_vals[i]);
+                totalDiff += diff;
+                if (diff >= precision) {
+                    numberOfDiffs++;
+                }
+            }
+
+            std::cerr << "Number of diffs: " << numberOfDiffs << "\n";
+            std::cerr << "Total diff: " << totalDiff << "\n";
+
             if(iter == maxIter - 1) {
                 _multiplier->multiply(env, xNew(), &_b, constrainedChoiceValues);
                 auto rowGroupIndices = this->_transitionMatrix.getRowGroupIndices();
