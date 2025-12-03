@@ -3,6 +3,9 @@ import paynt.synthesizer.synthesizer
 import paynt.quotient.pomdp
 import paynt.verification.property_result
 
+import numpy as np
+import os
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -116,12 +119,55 @@ class SynthesizerAR(paynt.synthesizer.synthesizer.Synthesizer):
             self.stat.new_fsc_found(family.analysis_result.improving_value, ia, self.quotient.policy_size(ia))
 
     def synthesize_one(self, family):
+        # first family has no parent
+        family.prev_value_vector = None
+        family.prev_state_quotient_state = None
+
         families = [family]
         while families:
             if self.resource_limit_reached():
                 break
             family = families.pop(-1)
             self.verify_family(family)
+
+            # ---- print stats about value vectors -----
+            prev_value_vector = family.prev_value_vector
+            curr_value_vector = family.analysis_result.optimality_result.primary.result.get_values()
+            prev_state_quotient_state = family.prev_state_quotient_state
+            curr_state_quotient_state = family.mdp.quotient_state_map
+
+            if prev_value_vector is not None:
+                print(f'Number of states left: {len(curr_value_vector)}', file=os.sys.stderr)
+                assert len(curr_value_vector) <= len(prev_value_vector)
+                print(f'Number of states removed: {len(prev_value_vector) - len(curr_value_vector)}', file=os.sys.stderr)
+
+                # values representing the absolute difference between previous and current value vector
+                # has length same as current vector (removed states are ignored)
+                diffs = np.array([])
+                # number of differences which are greater than zero
+                nonzero_diff_count = 0
+                prev_state = 0
+
+                for curr_state, curr_val in enumerate(curr_value_vector):
+                    # find current and previous state which corespond to the same quotient state
+                    while curr_state_quotient_state[curr_state] != prev_state_quotient_state[prev_state]:
+                        # values in x_state_quotient_state are strictly ascending
+                        assert curr_state_quotient_state[curr_state] > prev_state_quotient_state[prev_state]
+                        prev_state += 1
+                    prev_val = prev_value_vector[prev_state]
+                    diff = abs(prev_val - curr_val)
+                    if diff != 0:
+                        nonzero_diff_count += 1
+                    diffs = np.append(diffs, diff)
+
+                print(f'Diff min: {diffs.min()}', file=os.sys.stderr)
+                print(f'Diff max: {diffs.max()}', file=os.sys.stderr)
+                print(f'Diff avg: {diffs.mean()}', file=os.sys.stderr)
+                print(f'Diff std: {diffs.std()}', file=os.sys.stderr)
+                assert nonzero_diff_count <= len(curr_value_vector)
+                print(f'Number of nonzero diffs: {nonzero_diff_count}', file=os.sys.stderr)
+
+
             self.update_optimum(family)
             if not self.quotient.specification.has_optimality and self.best_assignment is not None:
                 break
@@ -131,5 +177,11 @@ class SynthesizerAR(paynt.synthesizer.synthesizer.Synthesizer):
                 continue
             # undecided
             subfamilies = self.quotient.split(family)
+
+            # add parent value vector and state_to_quotient_state mapping to each family in subfamilies
+            for subfamily in subfamilies:
+                subfamily.prev_value_vector = curr_value_vector
+                subfamily.prev_state_quotient_state = curr_state_quotient_state
+
             families = families + subfamilies
         return self.best_assignment
